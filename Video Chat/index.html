@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WebRTC App</title>
+    <title>WebRTC Demo</title>
   </head>
   <body>
     <h2>1. Start your Webcam</h2>
@@ -21,28 +21,21 @@
 
     </div>
 
-    <button id="webcamBtn">Start webcam</button>
+    <button id="webcamButton">Start webcam</button>
     <h2>2. Create a new Call</h2>
-    <button id="callBtn" disabled>Create Call (offer)</button>
+    <button id="callButton" disabled>Create Call (offer)</button>
 
     <h2>3. Join a Call</h2>
     <p>Answer the call from a different browser window or device</p>
     
     <input id="callInput" />
-    <button id="answerBtn" disabled>Answer</button>
+    <button id="answerButton" disabled>Answer</button>
 
     <h2>4. Hangup</h2>
 
-    <button id="hangupBtn" disabled>Hangup</button>
+    <button id="hangupButton" disabled>Hangup</button>
+
     <script type="module" src="/main.js"></script>
-    <!-- The core Firebase JS SDK is always required and must be listed first -->
-<script src="/__/firebase/8.9.1/firebase-app.js"></script>
 
-<!-- TODO: Add SDKs for Firebase products that you want to use
-     https://firebase.google.com/docs/web/setup#available-libraries -->
-<script src="/__/firebase/8.9.1/firebase-analytics.js"></script>
-
-<!-- Initialize Firebase -->
-<script src="/__/firebase/init.js"></script>
   </body>
 </html>
