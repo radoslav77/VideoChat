@@ -1,152 +1,153 @@
-import './style.css';
+import './style.css'
 
-import firebase from 'firebase/app';
-import 'firebase/firestore';
+import firebase from 'firebase/app'
+import 'firebase/ firestore'
 
+
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-   apiKey: "AIzaSyBPBDq5h69bA6p4F1zbpD1b6BuxWsAQAV4",
-  authDomain: "video-3d29a.firebaseapp.com",
-  projectId: "video-3d29a",
-  storageBucket: "video-3d29a.appspot.com",
-  messagingSenderId: "494688305665",
-  appId: "1:494688305665:web:2970aa77aa62d0efc3b600",
-  measurementId: "G-5FQTKDT8KJ"
+  apiKey: "AIzaSyB0lDvhcNauBDLa-EC6poy1gC4X8981Um4",
+  authDomain: "chat-208d1.firebaseapp.com",
+  projectId: "chat-208d1",
+  storageBucket: "chat-208d1.appspot.com",
+  messagingSenderId: "904278834088",
+  appId: "1:904278834088:web:6676a8d7733735c2157b9d",
+  measurementId: "G-2SCEZQCV9R"
 };
 
 if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
+  firebase.initializeApp(firebaseConfig)
 }
-const firestore = firebase.firestore();
 
 const servers = {
   iceServers: [
     {
-      urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'],
-    },
-  ],
-  iceCandidatePoolSize: 10,
-};
+    urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'],
+  },
+],
+icdCandidatePoolSize: 10,
+}
 
-// Global State
-const pc = new RTCPeerConnection(servers);
-let localStream = null;
-let remoteStream = null;
 
+// Global state
+let pc = new RTCPeerConnection(servers)
+let localStream = null
+let remoteStream = null
+ 
 // HTML elements
-const webcamButton = document.getElementById('webcamButton');
-const webcamVideo = document.getElementById('webcamVideo');
-const callButton = document.getElementById('callButton');
-const callInput = document.getElementById('callInput');
-const answerButton = document.getElementById('answerButton');
-const remoteVideo = document.getElementById('remoteVideo');
-const hangupButton = document.getElementById('hangupButton');
+const webcamButton = document.getElementById('webcamButton')
+const webcamVideo = document.getElementById('webcamVideo')
+const callButton = document.getElementById('callButton')
+const callInput = document.getElementById('callInput')
+const answerButton = document.getElementById('answerButton')
+const remoteVideo = document.getElementById('remoteVideo')
+const hangupButton = document.getElementById('hangupButton')
 
-// 1. Setup media sources
 
+// First set up madia sources
 webcamButton.onclick = async () => {
-  localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-  remoteStream = new MediaStream();
+   localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: true})
+   remoteStream = new MediaStream()
+  // push tracks from local streem to peer connection
+   localStream.getTracks().forEach((track) => {
+    pc.addTrack(track, localStream)
+   })
+   // get tracks from remote stream and add it to video
+   pc.ontrack = event => {
+     event.streams[0].getTracks().forEach(track => {
+       remoteStream.addTrack(track )
+     })
+   }
+   webcamVideo.srcObject = localStream
+   remoteVideo.srcObject = remoteStream
+}
 
-  // Push tracks from local stream to peer connection
-  localStream.getTracks().forEach((track) => {
-    pc.addTrack(track, localStream);
-  });
-
-  // Pull tracks from remote stream, add to video stream
-  pc.ontrack = (event) => {
-    event.streams[0].getTracks().forEach((track) => {
-      remoteStream.addTrack(track);
-    });
-  };
-
-  webcamVideo.srcObject = localStream;
-  remoteVideo.srcObject = remoteStream;
-
-  callButton.disabled = false;
-  answerButton.disabled = false;
-  webcamButton.disabled = true;
-};
-
-// 2. Create an offer
+// Second create an offer
 callButton.onclick = async () => {
-  // Reference Firestore collections for signaling
-  const callDoc = firestore.collection('calls').doc();
-  const offerCandidates = callDoc.collection('offerCandidates');
-  const answerCandidates = callDoc.collection('answerCandidates');
+  //reference Firestore collection
+  const callDoc = firestore.collection('calls').doc()
+  const offerCandidates = callDoc.collection('offerCandidates')
+  const answerCandidates = callDoc.collection('answerCandidates')
+  
+  callInput.value = callDoc.id 
 
-  callInput.value = callDoc.id;
+// get candidates for caller , save to db
+pc.onicecandidate = event => {
+  event.candidate && offerCandidates.addTrack(event.candidate.toJSON())
 
-  // Get candidates for caller, save to db
-  pc.onicecandidate = (event) => {
-    event.candidate && offerCandidates.add(event.candidate.toJSON());
-  };
+}
 
-  // Create offer
-  const offerDescription = await pc.createOffer();
-  await pc.setLocalDescription(offerDescription);
+
+  //create offer
+
+  const offerDescription = await pc.createOffer()
+  await pc.setLocalDescription(offerDescription )
 
   const offer = {
     sdp: offerDescription.sdp,
     type: offerDescription.type,
-  };
+  }
 
-  await callDoc.set({ offer });
-
-  // Listen for remote answer
+  await callDoc.set ({ offer })
+//listen for remote answer
   callDoc.onSnapshot((snapshot) => {
-    const data = snapshot.data();
-    if (!pc.currentRemoteDescription && data?.answer) {
-      const answerDescription = new RTCSessionDescription(data.answer);
-      pc.setRemoteDescription(answerDescription);
+    const data = snapshot.data()
+    if(!pc.currentRemoteDescription && data?.answer) {
+      const answerDescription = new RTCSessionDescription(data.answer)
+      pc.setRemoteDescription(answerDescription)
     }
-  });
-
-  // When answered, add candidate to peer connection
-  answerCandidates.onSnapshot((snapshot) => {
+  })
+  // When answered, add candidates to peer connection
+  answerCandidates.onSnapshot(snapshot => {
     snapshot.docChanges().forEach((change) => {
       if (change.type === 'added') {
-        const candidate = new RTCIceCandidate(change.doc.data());
-        pc.addIceCandidate(candidate);
+        const candidate = new RTCIceCandidate(change.doc.data())
+        pc.addIceCandidate(candidate)
       }
-    });
-  });
+    })
+  })
 
-  hangupButton.disabled = false;
-};
+}
 
-// 3. Answer the call with the unique ID
+// thirt answer the call with the unique ID
 answerButton.onclick = async () => {
-  const callId = callInput.value;
-  const callDoc = firestore.collection('calls').doc(callId);
-  const answerCandidates = callDoc.collection('answerCandidates');
-  const offerCandidates = callDoc.collection('offerCandidates');
+  const callId = callInput.value
+  const callDoc = firestore.collection('calls').doc(callId)
+  const answerCandidates = callDoc.collection('answerCandidates')
 
-  pc.onicecandidate = (event) => {
-    event.candidate && answerCandidates.add(event.candidate.toJSON());
-  };
+  pc.onicecandidate = event => {
+    event.candidate && answerCandidates.addTrack(event.candidate.toJSON())
 
-  const callData = (await callDoc.get()).data();
+  }
+  const callData = (await callDoc.getElementById()).data()
+  const offerDescription = callData.offer
+  await pc.setRemoteDescription(new RTCSessionDescription(offerDescription))
 
-  const offerDescription = callData.offer;
-  await pc.setRemoteDescription(new RTCSessionDescription(offerDescription));
-
-  const answerDescription = await pc.createAnswer();
-  await pc.setLocalDescription(answerDescription);
+  const answerDescription = await pc.createAnswer()
+  await pc.setLocalDescription(answerDescription)
 
   const answer = {
     type: answerDescription.type,
     sdp: answerDescription.sdp,
-  };
+  }
 
-  await callDoc.update({ answer });
+  await callDoc.update({ answer })
 
   offerCandidates.onSnapshot((snapshot) => {
     snapshot.docChanges().forEach((change) => {
-      console.log(change);
+      console.log(change)
       if (change.type === 'added') {
-        let data = change.doc.data();
-        pc.addIceCandidate(new RTCIceCandidate(data));
+        let data = change.doc.data()
+        pc.addIceCandidate(new RTCIceCandidate(data))
       }
-    });
-  });
-};
+    })
+  })
+
+
+}
+
+/*
+document.querySelector('#app').innerHTML = `
+  <h1>Hello Vite!</h1>
+  <a href="https://vitejs.dev/guide/features.html" target="_blank">Documentation</a>
+`*/

@@ -1,5 +1,5 @@
 {
-  "name": "vanilla",
+  "name": "video-chat",
   "version": "0.0.0",
   "scripts": {
     "dev": "vite",
